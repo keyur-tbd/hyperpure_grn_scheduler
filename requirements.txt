@@ -1,0 +1,8 @@
+
+google-auth==2.23.0
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.1.1
+google-api-python-client==2.100.0
+llama-cloud-services>=0.6.83
+schedule==1.2.0
+PyPDF2==3.0.0
