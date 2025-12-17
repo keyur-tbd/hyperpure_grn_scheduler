@@ -1,0 +1,25 @@
+# Credentials
+credentials.json
+token.json
+
+# Logs
+hyperpure_scheduler.log
+instamart_scheduler.log
+hyperpure_automation.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Virtual environments
+venv*/
