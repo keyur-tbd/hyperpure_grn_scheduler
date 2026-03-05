@@ -59,7 +59,7 @@ CONFIG = {
         'drive_folder_id': '1aUjRMqWjVDDAsQw0TugwgmwYjxP6W7DT',
         'spreadsheet_id': '1B1C2ILnIMXpEYbQzaSkhRzEP2gmgE2YLRNqoX98GwcU',
         'sheet_range': 'hyperpuregrn',
-        'days_back': 7,
+        'days_back': 17,
         'max_files': 1000,
         'failed_extractions_sheet': 'failed_extractions'
     },
