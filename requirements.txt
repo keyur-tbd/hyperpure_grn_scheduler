@@ -6,3 +6,4 @@ google-api-python-client==2.100.0
 llama-cloud-services>=0.6.83
 schedule==1.2.0
 PyPDF2==3.0.0
+supabase>=2.15.0
