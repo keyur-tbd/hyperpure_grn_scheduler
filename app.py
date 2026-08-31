@@ -24,12 +24,18 @@ from googleapiclient.http import MediaIoBaseUpload
 import io
 
 # Add LlamaParse import
+# Either LlamaCloud client counts as available -- llama_compat picks between
+# them, and the two packages cannot be installed together.
 try:
-    from llama_cloud_services import LlamaExtract
+    from llama_cloud_services import LlamaExtract  # noqa: F401  (v1)
     LLAMA_AVAILABLE = True
 except ImportError:
-    LLAMA_AVAILABLE = False
-    print("WARNING: llama_cloud_services not available")
+    try:
+        import llama_cloud  # noqa: F401  (v2)
+        LLAMA_AVAILABLE = True
+    except ImportError:
+        LLAMA_AVAILABLE = False
+        print("WARNING: neither llama_cloud_services nor llama_cloud is available")
 
 warnings.filterwarnings("ignore")
 
@@ -741,11 +747,13 @@ class HyperpureAutomation:
             self.log("Starting Drive to Sheet workflow with LlamaParse", "INFO")
             
             os.environ["LLAMA_CLOUD_API_KEY"] = config['llama_api_key']
-            extractor = LlamaExtract()
-            agent = extractor.get_agent(name=config['llama_agent'])
-            
-            if agent is None:
-                self.log(f"Could not find agent '{config['llama_agent']}'", "ERROR")
+            # Goes through llama_compat so this works on either LlamaCloud
+            # generation; see LLAMA_EXTRACT_API there.
+            from llama_compat import build_agent
+            try:
+                agent = build_agent(config['llama_agent'], api_key=config['llama_api_key'])
+            except Exception as exc:
+                self.log(f"Could not get agent '{config['llama_agent']}': {exc}", "ERROR")
                 return stats
             
             self.log("LlamaParse agent found", "SUCCESS")

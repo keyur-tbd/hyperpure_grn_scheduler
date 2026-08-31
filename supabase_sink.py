@@ -1485,7 +1485,10 @@ def run_pipeline(sink: SupabaseSink, days_back: Optional[int] = None,
     # though everything this sink needs is present. The import below is the
     # honest check: it raises ImportError with a clear message if the package
     # really is missing.
-    from llama_cloud_services import LlamaExtract
+    # Which LlamaCloud generation this repo is built against is decided by
+    # llama_compat (LLAMA_EXTRACT_API), not by importing one package here --
+    # llama-cloud-services and llama-cloud cannot both be installed.
+    from llama_compat import build_agent
 
     sheet_config = config_section(CONFIG, 'sheet', 'pdf')
     apply_module_defaults(sheet_config, app_module,
@@ -1524,10 +1527,9 @@ def run_pipeline(sink: SupabaseSink, days_back: Optional[int] = None,
     # LlamaExtract: prefer the env var, fall back to the key hardcoded in app.py.
     api_key = os.environ.get('LLAMA_CLOUD_API_KEY') or sheet_config['llama_api_key']
     os.environ['LLAMA_CLOUD_API_KEY'] = api_key
-    agent = LlamaExtract().get_agent(name=sheet_config['llama_agent'])
-    if agent is None:
-        raise RuntimeError(f"LlamaExtract agent '{sheet_config['llama_agent']}' not found")
-    logger.info('[PIPELINE] LlamaExtract agent ready')
+    # build_agent raises with a message naming what it did find, so an unknown
+    # agent/configuration fails here rather than once per document.
+    agent = build_agent(sheet_config['llama_agent'], api_key=api_key)
 
     list_pdfs = find_method(automation, 'list_drive_files', 'list_drive_pdfs')
     download = find_method(automation, 'download_from_drive')

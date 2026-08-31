@@ -3,7 +3,9 @@ google-auth==2.23.0
 google-auth-oauthlib==1.1.0
 google-auth-httplib2==0.1.1
 google-api-python-client==2.100.0
-llama-cloud-services>=0.6.83
+# v2 LlamaCloud client. Cannot coexist with llama-cloud-services, which
+# pins llama-cloud==0.1.46 -- this repo's agents are v2 configurations.
+llama-cloud>=2.15.0
 schedule==1.2.0
 PyPDF2==3.0.0
 supabase>=2.15.0

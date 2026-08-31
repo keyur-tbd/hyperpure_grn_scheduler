@@ -48,6 +48,15 @@ jobs:
       - name: Set environment variables
         run: |
           echo "LLAMA_CLOUD_API_KEY=${{ secrets.LLAMA_API_KEY }}" >> $GITHUB_ENV
+          # This repo's agents are v2 configurations in the new LlamaCloud
+          # account, so both extract steps below use the v2 client.
+          echo "LLAMA_EXTRACT_API=v2" >> $GITHUB_ENV
+
+      # Fails in seconds with a message naming the configurations it can see,
+      # rather than after a Drive listing and a download. The v1 -> v2 move
+      # broke exactly here: the name resolved against the wrong account.
+      - name: Verify LlamaCloud configuration
+        run: python llama_compat.py "Hyperpure Agent"
       
       # 6. Run the workflow
       - name: Run workflow
