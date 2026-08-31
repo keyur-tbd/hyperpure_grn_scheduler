@@ -11,10 +11,15 @@ on:
 jobs:
   run-scheduler:
     runs-on: ubuntu-latest
+    # Raised from 60 to 120 for the v1 -> v2 backlog only. LlamaCloud v2
+    # averages ~98s per document against v1's few seconds, so the first runs
+    # after the migration have hundreds of already-uploaded files to work
+    # through. Put this back to 60 once the backlog is clear.
+    #
     # Backstop only. The job's own --budget-minutes stops it first;
     # GitHub's default is 360 minutes, which let a stuck run keep
     # writing for 3h16m on 2026-08-31.
-    timeout-minutes: 60
+    timeout-minutes: 120
     
     steps:
       # 1. Checkout code
