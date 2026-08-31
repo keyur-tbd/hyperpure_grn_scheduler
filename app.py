@@ -54,7 +54,7 @@ CONFIG = {
         'max_results': 1000
     },
     'sheet': {
-        'llama_api_key': 'llx-csECp5RB25AeiLp57MQ8GnpViLFNyaezTOoHQIiwD7yn0CMr',
+        'llama_api_key': 'llx-EAgyL86v38UrVqqBtLCbEiXSJst32MbeHImxy0yjLAq6o82p',
         'llama_agent': 'Hyperpure Agent',
         'drive_folder_id': '1aUjRMqWjVDDAsQw0TugwgmwYjxP6W7DT',
         'spreadsheet_id': '1B1C2ILnIMXpEYbQzaSkhRzEP2gmgE2YLRNqoX98GwcU',
