@@ -57,7 +57,7 @@ CONFIG = {
         'search_term': 'GRN against PO Number',
         'gdrive_folder_id': '1euqxO-meY4Ahszpdk3XbwlRwvkfSlY8k',
         'attachment_filter': 'attachment.pdf',
-        'days_back': 7,
+        'days_back': 21,
         'max_results': 1000
     },
     'sheet': {
@@ -268,11 +268,18 @@ class HyperpureAutomation:
             query = " ".join(query_parts)
             self.log(f"Gmail search query: {query}", "INFO")
             
-            result = self.gmail_service.users().messages().list(
-                userId='me', q=query, maxResults=max_results
-            ).execute()
-            
-            messages = result.get('messages', [])
+            # Gmail returns at most 500 ids per page whatever maxResults says, so a busy
+            # window would silently drop the rest. Page until max_results or the end.
+            messages, page_token = [], None
+            while len(messages) < max_results:
+                result = self.gmail_service.users().messages().list(
+                    userId='me', q=query, pageToken=page_token,
+                    maxResults=min(500, max_results - len(messages))
+                ).execute()
+                messages.extend(result.get('messages', []))
+                page_token = result.get('nextPageToken')
+                if not page_token:
+                    break
             self.log(f"Found {len(messages)} emails matching criteria", "INFO")
             
             return messages
