@@ -22,7 +22,9 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseUpload
 import io
+from types import SimpleNamespace
 from etl_alerts import guard
+import hyperpure_pdf
 
 # Add LlamaParse import
 # Either LlamaCloud client counts as available -- llama_compat picks between
@@ -673,11 +675,40 @@ class HyperpureAutomation:
         return rows
     
     def safe_extract(self, agent, file_path: str, retries: int = 3):
+        """The GRN's lines, read from the PDF's text when they add up to its printed total, else from LlamaExtract.
+
+        LlamaExtract dropped lines without any error (27KOL-02971 came back with 2 of 11, 27BLR-09202 with 1 of 16;
+        2026-10-21), so whatever is returned is checked against the total the GRN prints (hyperpure_pdf.check).
+        The local parse costs no LlamaCloud credits and is exact on every Hyperpure GRN checked since August, so
+        it goes first; LlamaExtract is the fallback for a layout the parser does not know. If neither adds up,
+        LlamaExtract's lines are still loaded and self.last_extract_issue says why, for the failed_extractions tab.
+        supabase_sink.py calls this same method, so both paths get the check."""
+        self.last_extract_issue = None
+        try:
+            parsed = hyperpure_pdf.parse(file_path)
+            if parsed['items'] and hyperpure_pdf.check(parsed['items'], parsed['printed_total']) is None:
+                self.log(f"Read {len(parsed['items'])} line(s) from the PDF text; they add up to the GRN total, "
+                         f"no LlamaExtract call", "SUCCESS")
+                return SimpleNamespace(data=dict(parsed['header'], items=parsed['items']))
+            local_issue = hyperpure_pdf.check(parsed['items'], parsed['printed_total'])
+            self.log(f"PDF text parse not used ({local_issue}); falling back to LlamaExtract", "WARNING")
+        except Exception as e:
+            parsed = None
+            self.log(f"PDF text parse failed ({e}); falling back to LlamaExtract", "WARNING")
+
         for attempt in range(1, retries + 1):
             try:
                 self.log(f"Extracting data (attempt {attempt}/{retries})...", "INFO")
                 result = agent.extract(file_path)
                 self.log("Extraction successful", "SUCCESS")
+                data = getattr(result, 'data', result)
+                items = (data.get('items') or data.get('product_items') or []) if isinstance(data, dict) else []
+                total = parsed['printed_total'] if parsed else None
+                issue = hyperpure_pdf.check(items, total)
+                if issue:
+                    self.last_extract_issue = (f"LlamaExtract lines do not match the GRN: {issue}" if total is not None
+                                               else "LlamaExtract lines could not be checked: no GRN total in the PDF text")
+                    self.log(self.last_extract_issue, "WARNING")
                 return result
             except Exception as e:
                 self.log(f"Extraction attempt {attempt} failed: {str(e)}", "WARNING")
@@ -864,7 +895,20 @@ class HyperpureAutomation:
                             continue
                         
                         stats['processed_pdfs'] += 1
-                        
+                        if getattr(self, 'last_extract_issue', None):
+                            # loaded anyway (partial beats nothing), but listed so someone checks the PDF
+                            incomplete_extractions.append({
+                                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                'file_name': pdf_file['name'],
+                                'file_id': pdf_file['id'],
+                                'status': 'Lines do not add up to the GRN total',
+                                'items_extracted': len(rows_data),
+                                'completeness_score': 0,
+                                'issues': [self.last_extract_issue],
+                                'attempts': 1,
+                                'strategy_used': 'llamaextract'
+                            })
+
                         if not headers_set:
                             all_keys = set()
                             for row in rows_data:

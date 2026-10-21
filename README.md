@@ -12,7 +12,7 @@ Gmail  --->  Google Drive  --->  LlamaParse  --->  Google Sheets
 | Stage | What happens |
 |---|---|
 | **1. Gmail -> Drive** | Searches mail from `noreply@hyperpure.com` matching `GRN against PO Number`, looking back 7 days, and saves each attachment to a Drive folder. Already-seen files are skipped. |
-| **2. Extract** | Each new file is parsed by **LlamaParse** using the LlamaCloud extract agent `Hyperpure Agent`. |
+| **2. Extract** | `hyperpure_pdf.py` reads the lines from the PDF text and keeps them when they add up to the total the GRN prints (no LlamaCloud credits). Only a PDF it cannot reconcile goes to **LlamaExtract** (agent `Hyperpure Agent`), and those lines are checked against the same total: a mismatch is still loaded but listed on the `failed_extractions` tab. LlamaExtract used to drop lines silently (27KOL-02971: 2 of 11 lines; 2026-10-21). |
 | **3. Sheets** | Rows are appended to tab `hyperpuregrn` of the tracking spreadsheet. |
 | **4. Supabase** | `supabase_sink.py --run --source hyperpure` writes the same rows to table `hyperpure_grn`. Any field without a typed column is preserved in `raw_data` (jsonb), so a renamed or new field never fails a run. |
 
